@@ -1,0 +1,16 @@
+# Real settings and keys never enter git.
+.env
+.env.*
+!.env.example
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv*/
+venv/
+build/
+dist/
+build-image-replacer/
+dist-image-replacer/
+*.zip
+.claude/

@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>جایگزینی عکس مشترک محصولات</title>
+<style>
+  :root {
+    --bg: #f3f4f1; --card: #ffffff; --ink: #1d2433; --muted: #5f6778; --line: #dcdfe6;
+    --accent: #0f5c63; --accent-ink: #ffffff; --accent-soft: #e2f0f0;
+    --ok: #1b6e3c; --ok-soft: #e3f3e8; --warn: #8a5a00; --warn-soft: #fbefd2;
+    --bad: #a32020; --bad-soft: #fbe4e2; --idle: #4a5263; --idle-soft: #eceef2;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.75 "Segoe UI", Tahoma, sans-serif; }
+  header { background: var(--accent); color: var(--accent-ink); padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  header h1 { font-size: 19px; margin: 0; font-weight: 600; flex: 1 1 260px; }
+  main { max-width: 1120px; margin: 0 auto; padding: 18px 16px 60px; display: grid; gap: 14px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  section.locked > :not(h2) { opacity: .45; pointer-events: none; }
+  h2 { font-size: 16px; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+  h2 .num { background: var(--accent-soft); color: var(--accent); border-radius: 50%; width: 26px; height: 26px; display: inline-grid; place-items: center; font-size: 14px; }
+  p { margin: 4px 0; }
+  .muted { color: var(--muted); font-size: 13.5px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+  input[type=text], select { font: inherit; padding: 7px 10px; border: 1px solid #b9bfcb; border-radius: 7px; background: #fff; color: inherit; min-width: 0; }
+  input[type=text] { flex: 1 1 240px; }
+  button { font: inherit; padding: 7px 14px; border-radius: 7px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+  button.ghost { background: #fff; color: var(--accent); }
+  button.danger { background: var(--bad); border-color: var(--bad); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:focus-visible, input:focus-visible, select:focus-visible, .pick:focus-visible { outline: 3px solid #e0a100; outline-offset: 2px; }
+  .badge { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12.5px; background: var(--idle-soft); color: var(--idle); white-space: nowrap; }
+  .badge.ok { background: var(--ok-soft); color: var(--ok); } .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.bad { background: var(--bad-soft); color: var(--bad); } .badge.live { background: var(--accent-soft); color: var(--accent); }
+  header .badge { background: rgba(255,255,255,.18); color: #fff; }
+  .note { border-inline-start: 4px solid var(--warn); background: var(--warn-soft); color: #4d3600; padding: 8px 12px; border-radius: 6px; margin: 8px 0; font-size: 14px; }
+  .note.bad { border-color: var(--bad); background: var(--bad-soft); color: #5c1414; }
+  .note.info { border-color: var(--accent); background: var(--accent-soft); color: #0b3d42; }
+  .thumb { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; background: var(--idle-soft); border: 1px solid var(--line); display: block; }
+  .thumb.empty { display: grid; place-items: center; font-size: 10.5px; color: var(--muted); direction: ltr; }
+  .pick { border: 2px solid transparent; border-radius: 9px; padding: 2px; background: none; cursor: pointer; color: inherit; }
+  .pick:hover { border-color: var(--accent); } .pick small { display: block; font-size: 11px; direction: ltr; color: var(--muted); }
+  .gallery { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .slot { position: relative; } .slot.changed .thumb { outline: 3px solid var(--accent); }
+  .slot small { display: block; text-align: center; font-size: 10.5px; color: var(--muted); direction: ltr; }
+  .list { display: grid; gap: 8px; margin-top: 8px; }
+  .item { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .item-head { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+  .item-head strong { font-weight: 600; }
+  .chosen { display: flex; gap: 10px; align-items: center; background: var(--accent-soft); border-radius: 8px; padding: 8px 12px; margin-top: 8px; }
+  .link { background: none; border: none; color: var(--accent); padding: 0; text-decoration: underline; cursor: pointer; font-size: 13.5px; }
+  .arrow { font-size: 20px; color: var(--muted); padding: 0 4px; }
+  .preview-row { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+  .preview-row input { width: 18px; height: 18px; margin-top: 6px; }
+  .counts { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+  .counts span { background: var(--idle-soft); border-radius: 7px; padding: 3px 10px; font-size: 13.5px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { text-align: start; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; } td.ids { direction: ltr; text-align: end; font-size: 12.5px; color: var(--muted); }
+  .table-wrap { overflow-x: auto; }
+  #toast { position: fixed; inset-inline: 16px; bottom: 16px; margin: 0 auto; max-width: 720px; padding: 10px 14px; border-radius: 8px; background: #2a1414; color: #fff; display: none; z-index: 30; }
+  #toast.good { background: #123a22; }
+  #modal { position: fixed; inset: 0; background: rgba(20,24,34,.55); display: none; place-items: center; padding: 16px; z-index: 20; }
+  #modal .box { background: #fff; border-radius: 12px; padding: 18px 20px; max-width: 560px; width: 100%; }
+  #modal h3 { margin: 0 0 8px; font-size: 17px; } #modal ul { margin: 6px 0; padding-inline-start: 20px; }
+  #modal label { display: flex; gap: 8px; align-items: flex-start; margin: 12px 0; font-weight: 600; }
+  #modal label input { width: 18px; height: 18px; margin-top: 5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>جایگزینی گروهی عکس مشترک محصولات</h1>
+  <span class="badge" id="store-badge">وصل نیست</span>
+</header>
+<main>
+  <section id="s-connect">
+    <h2><span class="num">۱</span>اتصال به فروشگاه</h2>
+    <p class="muted">کلیدها از فایل <span dir="ltr">.env</span> کنار برنامه خوانده می‌شوند و هرگز در این پنجره نمایش داده نمی‌شوند. اتصال فقط یک درخواست خواندنی می‌فرستد.</p>
+    <div class="row">
+      <button id="b-connect">اتصال با <span dir="ltr">.env</span> کنار برنامه</button>
+      <button id="b-env" class="ghost">انتخاب فایل تنظیمات دیگر…</button>
+      <button id="b-demo" class="ghost">حالت نمایشی (بدون اینترنت و بدون کلید)</button>
+    </div>
+    <div id="connect-info"></div>
+  </section>
+
+  <section id="s-old" class="locked">
+    <h2><span class="num">۲</span>عکس مشترک قدیمی</h2>
+    <p class="muted">یکی از محصولاتی را که این عکس را دارد پیدا کنید، سپس روی همان عکس در گالری‌اش بزنید.</p>
+    <div class="row">
+      <input type="text" id="q-product" placeholder="نام محصول، کد کالا (SKU) یا لینک محصول" aria-label="جست‌وجوی محصول">
+      <button id="b-search">جست‌وجو</button>
+    </div>
+    <div id="product-results" class="list"></div>
+    <div id="old-chosen"></div>
+  </section>
+
+  <section id="s-scan" class="locked">
+    <h2><span class="num">۳</span>پیداکردن محصولات دارای این عکس</h2>
+    <p class="muted">همهٔ صفحه‌های محصولات یکی‌یکی و آهسته خوانده می‌شوند (هر بار ۲۰ محصول). این مرحله چیزی را تغییر نمی‌دهد.</p>
+    <div class="row">
+      <label for="scope">محدوده:</label>
+      <select id="scope">
+        <option value="any">همهٔ وضعیت‌های قابل‌دسترسی</option>
+        <option value="publish">فقط منتشرشده</option>
+        <option value="draft">فقط پیش‌نویس</option>
+        <option value="pending">در انتظار بازبینی</option>
+        <option value="private">خصوصی</option>
+        <option value="future">زمان‌بندی‌شده</option>
+      </select>
+      <button id="b-scan">شروع اسکن</button>
+      <button id="b-scan-stop" class="ghost" disabled>توقف اسکن</button>
+    </div>
+    <div id="scan-info"></div>
+  </section>
+
+  <section id="s-new" class="locked">
+    <h2><span class="num">۴</span>عکس جدید</h2>
+    <p class="muted">عکس جدید باید یک رسانهٔ همین سایت باشد. از رسانه‌های موجود انتخاب کنید یا یک فایل تازه بارگذاری کنید (فقط یک بار بارگذاری می‌شود).</p>
+    <div class="row">
+      <input type="text" id="q-media" placeholder="نام رسانه در کتابخانهٔ سایت (خالی = تازه‌ترین‌ها)" aria-label="جست‌وجوی رسانه">
+      <button id="b-media">نمایش رسانه‌ها</button>
+      <button id="b-upload" class="ghost">بارگذاری فایل جدید…</button>
+    </div>
+    <div id="media-results" class="gallery"></div>
+    <div id="new-chosen"></div>
+  </section>
+
+  <section id="s-preview" class="locked">
+    <h2><span class="num">۵</span>پیش‌نمایش و تأیید</h2>
+    <p class="muted">قبل و بعدِ هر محصول را ببینید. تیک هر محصولی را که نباید تغییر کند بردارید. تا وقتی تأیید نکنید چیزی روی سایت نوشته نمی‌شود.</p>
+    <div class="row">
+      <button id="b-preview">ساخت پیش‌نمایش</button>
+      <button id="b-all" class="ghost" disabled>انتخاب همه</button>
+      <button id="b-none" class="ghost" disabled>حذف همهٔ انتخاب‌ها</button>
+    </div>
+    <div id="preview-counts" class="counts"></div>
+    <div id="preview-list" class="list"></div>
+    <div class="row"><button id="b-run" disabled>اجرای جایگزینی روی محصولات انتخاب‌شده…</button></div>
+  </section>
+
+  <section id="s-jobs" class="locked">
+    <h2><span class="num">۶</span>کارها، ادامه و برگشت</h2>
+    <p class="muted">هر کار در این رایانه ذخیره می‌شود. اگر برنامه بسته شود، کار ناتمام همین‌جا می‌ماند و فقط با زدن «ادامه» دوباره راه می‌افتد.</p>
+    <div id="jobs" class="list"></div>
+    <div id="job-detail"></div>
+  </section>
+</main>
+
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="box">
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+    <label><input type="checkbox" id="modal-check"><span id="modal-check-text"></span></label>
+    <div class="row">
+      <button id="modal-yes" disabled></button>
+      <button id="modal-no" class="ghost">انصراف</button>
+    </div>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const fa = (n) => Number(n).toLocaleString('fa-IR');
+const ITEM_STATES = { queued: ['در صف', ''], writing: ['در حال بررسی', 'live'], verified: ['موفق', 'ok'], review: ['نیازمند بررسی', 'warn'], failed: ['ناموفق', 'bad'] };
+const JOB_STATES = { queued: ['در صف', ''], running: ['در حال اجرا', 'live'], paused: ['متوقف', 'warn'], completed: ['کامل', 'ok'], partial: ['پایان با موارد باز', 'warn'] };
+const SCOPES = { any: 'همهٔ وضعیت‌ها', publish: 'منتشرشده', draft: 'پیش‌نویس', pending: 'در انتظار بازبینی', private: 'خصوصی', future: 'زمان‌بندی‌شده' };
+let state = { connected: false, scan: { state: 'idle' } };
+let previewRows = [];
+let selected = new Set();
+let openJob = '';
+
+/** Build an element; text always goes in as text, never as markup. */
+function el(tag, props = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (key === 'class') node.className = value;
+    else if (key === 'on') for (const [name, fn] of Object.entries(value)) node.addEventListener(name, fn);
+    else if (value === true) node.setAttribute(key, '');
+    else if (value !== false && value != null) node.setAttribute(key, value);
+  }
+  for (const child of children.flat()) if (child != null && child !== false) node.append(child);
+  return node;
+}
+const fill = (node, ...children) => { node.replaceChildren(...children.flat().filter(Boolean)); return node; };
+
+/** Only store pictures (https) and the demo's inline pictures may be shown. */
+function thumb(src, id) {
+  const safe = typeof src === 'string' && (src.startsWith('https://') || src.startsWith('data:image/'));
+  return safe ? el('img', { class: 'thumb', src, alt: 'عکس ' + id, loading: 'lazy', referrerpolicy: 'no-referrer' })
+              : el('div', { class: 'thumb empty' }, '#' + id);
+}
+const badge = (text, kind = '') => el('span', { class: 'badge ' + kind }, text);
+const when = (iso) => { try { return new Date(iso).toLocaleString('fa-IR', { dateStyle: 'short', timeStyle: 'short' }); } catch { return iso || ''; } };
+
+let toastTimer;
+function toast(message, good = false) {
+  const box = $('toast');
+  box.textContent = message; box.className = good ? 'good' : ''; box.style.display = 'block';
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { box.style.display = 'none'; }, good ? 5000 : 12000);
+}
+
+async function call(name, ...args) {
+  const answer = await window.pywebview.api[name](...args);
+  if (!answer || answer.ok !== true) throw new Error((answer && answer.error) || 'پاسخی از برنامه دریافت نشد.');
+  return answer.data;
+}
+/** Run a button action once at a time and show its error to the user. */
+async function act(button, work) {
+  if (button) button.disabled = true;
+  try { await work(); } catch (error) { toast(error.message); }
+  finally { if (button) button.disabled = false; render(); }
+}
+
+function confirmDialog({ title, lines, check, yes, danger }) {
+  return new Promise((resolve) => {
+    $('modal-title').textContent = title;
+    fill($('modal-body'), el('ul', {}, lines.map((line) => el('li', {}, line))));
+    $('modal-check').checked = false; $('modal-check-text').textContent = check;
+    const yesButton = $('modal-yes');
+    yesButton.textContent = yes; yesButton.disabled = true; yesButton.className = danger ? 'danger' : '';
+    $('modal-check').onchange = () => { yesButton.disabled = !$('modal-check').checked; };
+    const close = (value) => { $('modal').style.display = 'none'; resolve(value); };
+    yesButton.onclick = () => close(true); $('modal-no').onclick = () => close(false);
+    $('modal').style.display = 'grid'; $('modal-check').focus();
+  });
+}
+
+// ───────────── rendering ─────────────
+function chosenBox(title, item, extra) {
+  return el('div', { class: 'chosen' }, thumb(item.src, item.id),
+    el('div', {}, el('strong', {}, title), el('div', { class: 'muted' }, 'شناسهٔ رسانه: ', el('span', { dir: 'ltr' }, String(item.id)), extra ? ' — ' + extra : '')));
+}
+
+function render() {
+  const busy = state.job_running || state.scan_running;
+  $('store-badge').textContent = !state.connected ? 'وصل نیست' : state.demo ? 'حالت نمایشی — هیچ سایتی تغییر نمی‌کند' : state.store;
+  for (const [id, open] of Object.entries({ 's-old': state.connected, 's-scan': !!state.old, 's-new': !!state.old,
+      's-preview': !!(state.old && state.new && state.scan.state === 'done'), 's-jobs': state.connected })) {
+    $(id).classList.toggle('locked', !open);
+  }
+  for (const id of ['b-connect', 'b-env', 'b-demo', 'b-scan', 'b-upload', 'b-preview']) $(id).disabled = busy;
+  $('b-scan-stop').disabled = !state.scan_running;
+
+  fill($('connect-info'), state.connected && el('div', { class: 'note info' },
+    state.demo ? 'فروشگاه نمایشی با ۴۵ محصول ساختگی باز است. برای تمرین، «DEMO-001» را جست‌وجو کنید.'
+      : 'اتصال خواندنی تأیید شد. مجوز نوشتن عمداً آزمایش نشده است؛ اگر کلید فقط‌خواندنی باشد، صف در اولین محصول متوقف می‌شود و چیزی تغییر نمی‌کند.',
+    !state.demo && !state.upload_ready ? ' بارگذاری عکس غیرفعال است (نام کاربری و رمز برنامهٔ وردپرس در .env نیست)؛ از رسانه‌های موجود انتخاب کنید.' : ''));
+
+  fill($('old-chosen'), state.old && chosenBox('عکس قدیمی انتخاب‌شده', state.old, 'از محصول «' + state.old.product_name + '»'));
+  fill($('new-chosen'), state.new && chosenBox('عکس جدید انتخاب‌شده', state.new, state.new.title));
+
+  const scan = state.scan, info = [];
+  if (scan.state === 'running' && scan.progress) info.push(el('div', { class: 'note info' },
+    `در حال اسکن… ${fa(scan.progress.pages)} صفحه، ${fa(scan.progress.scanned)} محصول بررسی شد، ${fa(scan.progress.found)} مورد پیدا شد.`));
+  if (scan.state === 'done') info.push(el('div', { class: 'counts' },
+    el('span', {}, `پیداشده: ${fa(scan.result.found)}`), el('span', {}, `بررسی‌شده: ${fa(scan.result.scanned)} محصول در ${fa(scan.result.pages)} صفحه`),
+    el('span', {}, 'محدوده: ' + (SCOPES[scan.result.scope] || scan.result.scope)), el('span', {}, 'زمان اسکن: ' + when(scan.result.scanned_at))),
+    el('p', { class: 'muted' }, scan.result.coverage + ' اگر از زمان اسکن گذشته است، دوباره اسکن کنید.'));
+  if (scan.state === 'stopped' || scan.state === 'error') info.push(el('div', { class: 'note bad' }, scan.error));
+  fill($('scan-info'), info);
+
+  if (!state.preview_ready && previewRows.length) { previewRows = []; selected = new Set(); }
+  renderPreview();
+}
+
+function galleryRow(images, changedIds) {
+  return el('div', { class: 'gallery' }, images.map((image, index) =>
+    el('div', { class: 'slot' + (changedIds.has(image.id) ? ' changed' : '') }, thumb(image.src, image.id),
+      el('small', {}, (index === 0 ? '★ ' : '') + image.id))));
+}
+
+function renderPreview() {
+  const usable = previewRows.filter((row) => !row.blocked);
+  $('b-all').disabled = $('b-none').disabled = !usable.length;
+  $('b-run').disabled = !selected.size || state.job_running || !state.preview_ready;
+  fill($('preview-counts'), previewRows.length ? [
+    el('span', {}, `محصولات یافت‌شده: ${fa(previewRows.length)}`), el('span', {}, `انتخاب‌شده برای تغییر: ${fa(selected.size)}`),
+    previewRows.length - usable.length ? el('span', {}, `نیازمند بررسی دستی: ${fa(previewRows.length - usable.length)}`) : null] : []);
+  fill($('preview-list'), previewRows.map((row) => {
+    const box = el('input', { type: 'checkbox', 'aria-label': 'انتخاب ' + row.name, disabled: row.blocked, checked: selected.has(row.id),
+      on: { change: (event) => { event.target.checked ? selected.add(row.id) : selected.delete(row.id); renderPreview(); } } });
+    box.checked = selected.has(row.id);
+    return el('div', { class: 'item preview-row' }, box, el('div', {},
+      el('div', { class: 'item-head' }, el('strong', {}, row.name || 'بدون نام'),
+        el('span', { class: 'muted', dir: 'ltr' }, '#' + row.id + (row.sku ? ' · ' + row.sku : '')),
+        row.status && row.status !== 'publish' ? badge(SCOPES[row.status] || row.status) : null,
+        row.main_image_changes ? badge('تصویر اصلی محصول هم عوض می‌شود', 'warn') : null,
+        row.blocked ? badge('خارج از اجرای خودکار', 'bad') : badge('جایگاه ' + row.positions.map((p) => fa(p + 1)).join('، '), 'live'),
+        row.permalink && !state.demo ? el('button', { class: 'link', on: { click: () => act(null, () => call('open_link', row.permalink)) } }, 'دیدن محصول') : null),
+      row.blocked ? el('div', { class: 'note bad' }, row.reason) : null,
+      row.notice ? el('div', { class: 'note' }, row.notice) : null,
+      el('div', { class: 'gallery' }, galleryRow(row.before_images, new Set([state.old && state.old.id])),
+        row.blocked ? null : [el('span', { class: 'arrow', 'aria-label': 'تبدیل می‌شود به' }, '←'), galleryRow(row.after_images, new Set([state.new && state.new.id]))])));
+  }));
+}
+
+function summaryCounts(summary) {
+  return el('div', { class: 'counts' }, el('span', {}, `انتخاب‌شده: ${fa(summary.selected)}`), el('span', {}, `موفق: ${fa(summary.verified)}`),
+    el('span', {}, `ناموفق: ${fa(summary.failed)}`), el('span', {}, `نیازمند بررسی: ${fa(summary.review)}`), el('span', {}, `انجام‌نشده: ${fa(summary.pending)}`));
+}
+
+async function refreshJobs() {
+  if (!state.connected) return;
+  const jobs = await call('jobs');
+  fill($('jobs'), jobs.length ? jobs.map(jobCard) : el('p', { class: 'muted' }, 'هنوز کاری ثبت نشده است.'));
+  if (openJob && jobs.some((job) => job.id === openJob)) await showJob(openJob); else fill($('job-detail'));
+}
+
+function jobCard(job) {
+  const [label, kind] = JOB_STATES[job.state] || [job.state, ''];
+  const buttons = [];
+  if (job.running) buttons.push(el('button', { class: 'danger', on: { click: (e) => act(e.target, async () => { await call('stop_job'); toast('درخواست بعدی فرستاده نمی‌شود. درخواستِ در حال اجرا ممکن است روی سایت کامل شود و پس از پاسخ تعیین تکلیف می‌شود.', true); }) } }, 'توقف'));
+  if (job.can_resume && !state.job_running) buttons.push(el('button', { on: { click: (e) => resumeJob(e.target, job) } }, 'ادامه'));
+  if (job.can_rollback && !state.job_running) buttons.push(el('button', { class: 'ghost', on: { click: (e) => rollbackJob(e.target, job) } }, 'برگشت موارد موفق…'));
+  buttons.push(el('button', { class: 'ghost', on: { click: (e) => act(e.target, async () => { openJob = openJob === job.id ? '' : job.id; await refreshJobs(); }) } }, openJob === job.id ? 'بستن جزئیات' : 'جزئیات'));
+  buttons.push(el('button', { class: 'ghost', on: { click: (e) => act(e.target, async () => { const out = await call('export_report', job.id); toast('گزارش ذخیره شد: ' + out.folder + ' — ' + out.files.join(' و '), true); }) } }, 'ذخیرهٔ گزارش'));
+  return el('div', { class: 'item' },
+    el('div', { class: 'item-head' }, el('strong', {}, job.kind === 'rollback' ? 'برگشت' : 'جایگزینی'), badge(label, kind),
+      el('span', { class: 'muted' }, when(job.created)), el('span', { class: 'muted' }, `از عکس ${job.old_id} به عکس ${job.new_id}`)),
+    summaryCounts(job.summary),
+    job.state === 'paused' && !job.running ? el('div', { class: 'note' }, 'این کار کامل نشده است. توقف، تغییرهای انجام‌شده را برنمی‌گرداند.') : null,
+    job.error ? el('div', { class: 'note bad' }, job.error) : null,
+    el('div', { class: 'row' }, buttons));
+}
+
+async function showJob(jobId) {
+  const detail = await call('job_detail', jobId);
+  fill($('job-detail'), el('div', { class: 'table-wrap' }, el('table', {},
+    el('thead', {}, el('tr', {}, ['محصول', 'وضعیت', 'تلاش', 'تصاویر قبل', 'تصاویر بعد', 'توضیح'].map((t) => el('th', {}, t)))),
+    el('tbody', {}, detail.items.map((item) => {
+      const [label, kind] = ITEM_STATES[item.state] || [item.state, ''];
+      return el('tr', {}, el('td', {}, item.name + ' ', el('span', { class: 'muted', dir: 'ltr' }, '#' + item.pid)), el('td', {}, badge(label, kind)),
+        el('td', {}, fa(item.attempts)), el('td', { class: 'ids' }, item.before.join(', ')), el('td', { class: 'ids' }, item.after.join(', ')), el('td', {}, item.error));
+    })))));
+}
+
+// ───────────── actions ─────────────
+async function refresh() { state = await call('state'); render(); }
+
+async function afterConnect(next) {
+  if (!next) return;
+  state = next; previewRows = []; selected = new Set(); openJob = '';
+  fill($('product-results')); fill($('media-results'));
+  render(); await refreshJobs();
+}
+$('b-connect').onclick = (e) => act(e.target, async () => afterConnect(await call('connect', '')));
+$('b-env').onclick = (e) => act(e.target, async () => afterConnect(await call('choose_env_file')));
+$('b-demo').onclick = (e) => act(e.target, async () => afterConnect(await call('start_demo')));
+
+$('b-search').onclick = (e) => act(e.target, async () => {
+  const rows = await call('search_products', $('q-product').value);
+  fill($('product-results'), rows.length ? rows.map((row) => el('div', { class: 'item' },
+    el('div', { class: 'item-head' }, el('strong', {}, row.name || 'بدون نام'),
+      el('span', { class: 'muted', dir: 'ltr' }, '#' + row.id + (row.sku ? ' · ' + row.sku : '')),
+      row.permalink && !state.demo ? el('button', { class: 'link', on: { click: () => act(null, () => call('open_link', row.permalink)) } }, 'دیدن محصول') : null),
+    row.images.length ? el('div', { class: 'gallery' }, row.images.map((image) =>
+      el('button', { class: 'pick', title: 'انتخاب به‌عنوان عکس قدیمی', on: { click: (event) => act(event.currentTarget, async () => {
+        state = await call('select_old', row.id, image.id); previewRows = []; selected = new Set(); }) } }, thumb(image.src, image.id), el('small', {}, String(image.id)))))
+      : el('p', { class: 'muted' }, 'این محصول عکسی ندارد.')))
+    : el('p', { class: 'muted' }, 'محصولی پیدا نشد. نام دقیق‌تر، کد کالا یا لینک محصول را امتحان کنید.'));
+});
+$('q-product').onkeydown = (e) => { if (e.key === 'Enter') $('b-search').click(); };
+
+$('b-scan').onclick = (e) => act(e.target, async () => { state = await call('start_scan', $('scope').value); previewRows = []; selected = new Set(); });
+$('b-scan-stop').onclick = (e) => act(e.target, () => call('stop_scan'));
+
+$('b-media').onclick = (e) => act(e.target, async () => {
+  const rows = await call('search_media', $('q-media').value);
+  fill($('media-results'), rows.length ? rows.map((row) =>
+    el('button', { class: 'pick', title: row.title, on: { click: (event) => act(event.currentTarget, async () => { state = await call('select_new', row.id); previewRows = []; selected = new Set(); }) } },
+      thumb(row.src, row.id), el('small', {}, String(row.id))))
+    : el('p', { class: 'muted' }, 'رسانه‌ای پیدا نشد.'));
+});
+$('q-media').onkeydown = (e) => { if (e.key === 'Enter') $('b-media').click(); };
+$('b-upload').onclick = (e) => act(e.target, async () => { const next = await call('upload_new'); if (next) { state = next; previewRows = []; selected = new Set(); toast('عکس بارگذاری و انتخاب شد.', true); } });
+
+$('b-preview').onclick = (e) => act(e.target, async () => {
+  previewRows = await call('preview');
+  selected = new Set(previewRows.filter((row) => !row.blocked).map((row) => row.id));
+  state = await call('state');
+  if (!previewRows.length) toast('هیچ محصولی این عکس را ندارد؛ چیزی برای تغییر نیست.', true);
+});
+$('b-all').onclick = () => { selected = new Set(previewRows.filter((row) => !row.blocked).map((row) => row.id)); renderPreview(); };
+$('b-none').onclick = () => { selected = new Set(); renderPreview(); };
+
+$('b-run').onclick = async (e) => {
+  const ids = [...selected];
+  const mainCount = previewRows.filter((row) => selected.has(row.id) && row.main_image_changes).length;
+  const agreed = await confirmDialog({
+    title: state.demo ? 'اجرای نمایشی جایگزینی' : 'اجرای واقعی روی سایت',
+    lines: [`گالری ${fa(ids.length)} محصول از طریق API ویرایش می‌شود (فقط فیلد تصاویر).`,
+      mainCount ? `در ${fa(mainCount)} محصول، تصویر اصلی هم عوض می‌شود.` : 'تصویر اصلی هیچ محصولی عوض نمی‌شود.',
+      'محصولات یکی‌یکی و با فاصله پردازش می‌شوند؛ هر محصول پیش از نوشتن دوباره خوانده می‌شود.',
+      'عکس قدیمی و جدید حذف نمی‌شوند. تصاویر مستقل تنوع‌ها تغییر نمی‌کنند.',
+      'اگر شخص دیگری هم‌زمان همان محصول را ویرایش کند، احتمال تداخل کاملاً صفر نیست؛ زمان خلوت را انتخاب کنید.'],
+    check: state.demo ? 'فهمیدم؛ اجرای نمایشی را شروع کن.' : 'می‌دانم این کار محصولات سایت واقعی را ویرایش می‌کند.', yes: 'شروع جایگزینی' });
+  if (!agreed) return;
+  act(e.target, async () => { openJob = await call('start_job', ids, true); previewRows = []; selected = new Set(); state = await call('state'); await refreshJobs(); $('s-jobs').scrollIntoView({ behavior: 'smooth' }); });
+};
+
+async function resumeJob(button, job) {
+  const agreed = await confirmDialog({ title: 'ادامهٔ کار ناتمام',
+    lines: [`${fa(job.summary.pending)} محصول باقی مانده است.`, 'هر محصول ابتدا از سایت خوانده می‌شود؛ محصول موفق دوباره نوشته نمی‌شود.'],
+    check: state.demo ? 'ادامهٔ نمایشی را شروع کن.' : 'می‌دانم ادامهٔ کار محصولات سایت واقعی را ویرایش می‌کند.', yes: 'ادامه' });
+  if (agreed) act(button, async () => { openJob = await call('resume_job', job.id, true); state = await call('state'); await refreshJobs(); });
+}
+async function rollbackJob(button, job) {
+  const agreed = await confirmDialog({ title: 'برگشت موارد موفق', danger: true,
+    lines: [`${fa(job.summary.verified)} محصول موفق بررسی می‌شود.`, 'فقط محصولی که گالری‌اش دقیقاً همان حالتِ بعد از جایگزینی باشد به حالت قبل برمی‌گردد.',
+      'اگر گالری بعداً تغییر کرده باشد، آن محصول برای بررسی دستی کنار گذاشته می‌شود.', 'هیچ رسانه‌ای حذف نمی‌شود.'],
+    check: state.demo ? 'برگشت نمایشی را شروع کن.' : 'می‌دانم برگشت هم محصولات سایت واقعی را ویرایش می‌کند.', yes: 'شروع برگشت' });
+  if (agreed) act(button, async () => { openJob = await call('start_rollback', job.id, true); state = await call('state'); await refreshJobs(); });
+}
+
+// While something runs, ask the app for fresh state once a second.
+let wasBusy = false;
+setInterval(async () => {
+  if (!window.pywebview || !(state.job_running || state.scan_running || wasBusy)) return;
+  try {
+    await refresh();
+    if (state.job_running || wasBusy) await refreshJobs();
+    wasBusy = state.job_running || state.scan_running;
+  } catch (error) { /* The next tick retries; a visible error would repeat every second. */ }
+}, 1000);
+
+async function boot() {
+  try { await refresh(); if (state.connected) await refreshJobs(); } catch (error) { toast(error.message); }
+}
+if (window.pywebview && window.pywebview.api) boot(); else window.addEventListener('pywebviewready', boot);
+</script>
+</body>
+</html>
