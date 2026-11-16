@@ -4,7 +4,19 @@
 
 A Windows desktop tool (Python + pywebview) with a Persian interface. You pick the old shared image and its replacement; the tool finds every product that uses the old image, shows a before/after preview, and only after your explicit confirmation swaps that one image reference in the products you selected.
 
+## Download / دریافت
+
+**[⬇ WooCommerceImageReplacer.exe — latest release](https://github.com/mahdiPourkazemi/woocommerce-image-replacer/releases/latest)** (Windows 10/11, 64-bit)
+
 <div dir="rtl">
+
+فایل اجرایی ویندوز آماده است و به نصب پایتون نیاز ندارد:
+
+1. از [صفحهٔ آخرین نسخه](https://github.com/mahdiPourkazemi/woocommerce-image-replacer/releases/latest) فایل `WooCommerceImageReplacer.exe` و `default.env.example` را بگیرید و در یک پوشه بگذارید.
+2. نام `default.env.example` را به `.env` تغییر دهید و آدرس فروشگاه و کلید ووکامرس را در آن بنویسید.
+3. برنامه را اجرا کنید. برای تمرین بدون کلید و بدون اینترنت، دکمهٔ «حالت نمایشی» را بزنید.
+
+فایل اجرایی امضای دیجیتال ندارد؛ ممکن است ویندوز در اولین اجرا هشدار SmartScreen نشان دهد («More info» و سپس «Run anyway»). اگر ترجیح می‌دهید، می‌توانید آن را با دستور بخش «ساخت فایل اجرایی» خودتان از روی کد بسازید.
 
 ## این ابزار چه کاری می‌کند؟
 
